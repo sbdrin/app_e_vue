@@ -2,8 +2,8 @@
 
 import { app, protocol, BrowserWindow } from 'electron'
 import { createProtocol } from 'vue-cli-plugin-electron-builder/lib'
-import installExtension, { VUEJS_DEVTOOLS } from 'electron-devtools-installer'
 const isDevelopment = process.env.NODE_ENV !== 'production'
+const http = require('http');
 // const path = require('path')
 // Scheme must be registered before the app is ready
 protocol.registerSchemesAsPrivileged([
@@ -17,20 +17,19 @@ async function createWindow() {
     height: 680,
     webPreferences: {
       // preload: path.join(__dirname, 'preload.js'),
-      // Use pluginOptions.nodeIntegration, leave this alone
-      // See nklayman.github.io/vue-cli-plugin-electron-builder/guide/security.html#node-integration for more info
       nodeIntegration: process.env.ELECTRON_NODE_INTEGRATION
     }
   })
+  console.dir(process.argv);
   mainWindow.setMenu(null);
   if (process.env.WEBPACK_DEV_SERVER_URL) {
     // Load the url of the dev server if in development mode
-    await mainWindow.loadURL('http://dolphin-dev.kedacom.com/pmf2')
+    await mainWindow.loadURL(process.argv[2] || 'http://dolphin-dev.kedacom.com/pmf2')
     if (!process.env.IS_TEST) mainWindow.webContents.openDevTools()
   } else {
     createProtocol('app')
-    // Load the index.html when not in development
-    mainWindow.loadURL('app://./index.html')
+    // await mainWindow.loadURL(process.argv[1] || 'app://./index.html');
+    await mainWindow.loadURL(process.argv[1] || 'http://dolphin-dev.kedacom.com/pmf2');
   }
 }
 
@@ -45,7 +44,14 @@ app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) createWindow()
 })
 app.on('ready', async () => {
-  createWindow()
+  createWindow();
+  http.createServer(function (req, res) {
+    if (req.url.indexOf('close')) {
+      res.writeHead(200, { 'Content-Type': 'text/plain' });
+      res.end('app close');
+      app.quit();
+    }
+  }).listen(8888);
 })
 if (isDevelopment) {
   if (process.platform === 'win32') {
