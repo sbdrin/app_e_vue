@@ -1,6 +1,6 @@
 'use strict'
 
-import { app, protocol, BrowserWindow } from 'electron'
+import { app, protocol, BrowserWindow, globalShortcut } from 'electron'
 import { createProtocol } from 'vue-cli-plugin-electron-builder/lib'
 const isDevelopment = process.env.NODE_ENV !== 'production'
 const http = require('http');
@@ -9,7 +9,6 @@ const http = require('http');
 protocol.registerSchemesAsPrivileged([
   { scheme: 'app', privileges: { secure: true, standard: true } }
 ])
-
 async function createWindow() {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
@@ -20,11 +19,14 @@ async function createWindow() {
       nodeIntegration: process.env.ELECTRON_NODE_INTEGRATION
     }
   })
-  console.dir(process.argv);
   mainWindow.setMenu(null);
+  globalShortcut.register('CommandOrControl+F12', () => {
+    mainWindow.webContents.openDevTools()
+  });
+
   if (process.env.WEBPACK_DEV_SERVER_URL) {
     // Load the url of the dev server if in development mode
-    await mainWindow.loadURL(process.argv[2] || 'http://dolphin-dev.kedacom.com/pmf2')
+    await mainWindow.loadURL(process.argv[2] || process.env.WEBPACK_DEV_SERVER_URL)
     if (!process.env.IS_TEST) mainWindow.webContents.openDevTools()
   } else {
     createProtocol('app')
@@ -32,7 +34,6 @@ async function createWindow() {
     await mainWindow.loadURL(process.argv[1] || 'http://dolphin-dev.kedacom.com/pmf2');
   }
 }
-
 // Quit when all windows are closed.
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {

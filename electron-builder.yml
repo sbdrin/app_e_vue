@@ -1,0 +1,5 @@
+{
+  nsis:{
+    runAfterFinish: false 
+  }
+}
