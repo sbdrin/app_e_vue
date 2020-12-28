@@ -4,6 +4,8 @@ import { app, protocol, BrowserWindow, globalShortcut } from 'electron'
 import { createProtocol } from 'vue-cli-plugin-electron-builder/lib'
 const isDevelopment = process.env.NODE_ENV !== 'production'
 const http = require('http');
+const request = require('request');
+const log = require('electron-log');
 // const path = require('path')
 // Scheme must be registered before the app is ready
 protocol.registerSchemesAsPrivileged([
@@ -34,10 +36,18 @@ async function createWindow() {
     await mainWindow.loadURL(process.argv[1] || 'http://dolphin-dev.kedacom.com/pmf2');
   }
 }
+
+function close() {
+  request('http://localhost:9090/close', function (error, response, body) {
+    log.info(JSON.stringify(response));
+    app.quit();
+  });
+  setTimeout(() => { app.quit() }, 500);
+}
 // Quit when all windows are closed.
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
-    app.quit()
+    close()
   }
 })
 
@@ -50,7 +60,7 @@ app.on('ready', async () => {
     if (req.url.indexOf('close')) {
       res.writeHead(200, { 'Content-Type': 'text/plain' });
       res.end('app close');
-      app.quit();
+      close();
     }
   }).listen(8888);
 })
@@ -58,12 +68,12 @@ if (isDevelopment) {
   if (process.platform === 'win32') {
     process.on('message', (data) => {
       if (data === 'graceful-exit') {
-        app.quit()
+        close();
       }
     })
   } else {
     process.on('SIGTERM', () => {
-      app.quit()
+      close()
     })
   }
 }
